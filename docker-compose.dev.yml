@@ -1,0 +1,79 @@
+version: '3.4'
+
+networks:
+    dh_dev:
+        driver: bridge
+        ipam:
+            config:
+                - subnet: 192.168.0.1/24
+
+services:
+    rabbitmq_dev:
+        image: rabbitmq:3-management-alpine
+        container_name: rabbitmq_dev
+        restart: always
+        ports:
+            - 5672:5672
+            - 15672:15672
+        environment:
+            - RABBITMQ_DEFAULT_USER=guest
+            - RABBITMQ_DEFAULT_PASS=guest
+        networks:
+            dh_dev:
+                ipv4_address: 192.168.0.5
+
+    mariadb_dev:
+        image: mariadb:10.5.4-focal
+        container_name: mariadb_dev
+        restart: always
+        volumes:
+            - ./db-data-dev:/var/lib/mysql:rw
+        ports:
+            - 3306:3306
+        environment:
+            - MYSQL_RANDOM_ROOT_PASSWORD=yes
+            - MYSQL_DATABASE=db_name
+            - MYSQL_USER=db_user
+            - MYSQL_PASSWORD=db_password
+        networks:
+            dh_dev:
+                ipv4_address: 192.168.0.4
+
+    php_fpm_dev:
+        build:
+            context: ./api
+            target: php_fpm
+        image: php-fpm:1-dh-dev
+        entrypoint: docker-php-entrypoint php-fpm
+        container_name: php_fpm_dev
+        restart: always
+        depends_on:
+            - mariadb_dev
+        volumes:
+            - ./api:/app:rw
+        ports:
+            - 9000:9000
+        environment:
+            - APP_ENV=dev
+        networks:
+            dh_dev:
+                ipv4_address: 192.168.0.3
+
+    nginx_dev:
+        build:
+            context: ./api
+            target: nginx
+        image: nginx:1-dh-dev
+        container_name: nginx_dev
+        restart: always
+        depends_on:
+            - php_fpm_dev
+        volumes:
+            - ./api:/app:rw
+        ports:
+            - 8008:80
+        extra_hosts:
+            - 'php_fpm:192.168.0.3'
+        networks:
+            dh_dev:
+                ipv4_address: 192.168.0.2

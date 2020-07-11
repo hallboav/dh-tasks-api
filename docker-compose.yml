@@ -1,0 +1,71 @@
+version: '3.4'
+
+networks:
+    dh:
+        driver: bridge
+        ipam:
+            config:
+                - subnet: 10.0.0.0/24
+
+services:
+    rabbitmq:
+        image: rabbitmq:3-alpine
+        container_name: rabbitmq
+        restart: always
+        environment:
+            - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER:?RABBITMQ_DEFAULT_USER is not set or empty}
+            - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS:?RABBITMQ_DEFAULT_PASS is not set or empty}
+            - RABBITMQ_DEFAULT_VHOST=${RABBITMQ_DEFAULT_VHOST:-%2f}
+        networks:
+            dh:
+                ipv4_address: 10.0.0.5
+
+    mariadb:
+        image: mariadb:10.5.4-focal
+        container_name: mariadb
+        restart: always
+        volumes:
+            - ./db-data:/var/lib/mysql:rw
+        environment:
+            - MYSQL_RANDOM_ROOT_PASSWORD=yes
+            - MYSQL_DATABASE=${MYSQL_DATABASE:?MYSQL_DATABASE is not set or empty}
+            - MYSQL_USER=${MYSQL_USER:?MYSQL_USER is not set or empty}
+            - MYSQL_PASSWORD=${MYSQL_PASSWORD:?MYSQL_PASSWORD is not set or empty}
+        networks:
+            dh:
+                ipv4_address: 10.0.0.4
+
+    php_fpm:
+        build:
+            context: ./api
+            target: php_fpm
+        image: php-fpm:1-dh
+        container_name: php_fpm
+        restart: always
+        depends_on:
+            - mariadb
+        environment:
+            - APP_DEBUG=0
+            - APP_ENV=prod
+            - APP_SECRET=${APP_SECRET:?APP_SECRET is not set or empty}
+            - CORS_ALLOW_ORIGIN=${CORS_ALLOW_ORIGIN:?CORS_ALLOW_ORIGIN is not set or empty}
+            - DATABASE_URL=${DATABASE_URL:?DATABASE_URL is not set or empty}
+            - MESSENGER_TRANSPORT_DSN=${MESSENGER_TRANSPORT_DSN:?MESSENGER_TRANSPORT_DSN is not set or empty}
+        networks:
+            dh:
+                ipv4_address: 10.0.0.3
+
+    nginx:
+        build:
+            context: ./api
+            target: nginx
+        image: nginx:1-dh
+        container_name: nginx
+        restart: always
+        depends_on:
+            - php_fpm
+        ports:
+            - 8000:80
+        networks:
+            dh:
+                ipv4_address: 10.0.0.2

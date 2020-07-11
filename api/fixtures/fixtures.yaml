@@ -1,0 +1,29 @@
+App\Entity\Tasklist:
+    artem_vacation:
+        title: 'Vacation'
+    recep_hiring:
+        title: 'Things Hallison should do to convince me'
+    hallisons_wife:
+        title: 'Things my wife wants me to do'
+
+App\Entity\Task:
+    fernando_de_noronha:
+        title: 'Relax in Fernando de Noronha'
+        details: ~
+        tasklist: '@artem_vacation'
+        done: false
+    show_knowledge:
+        title: 'Show excellent skills in software development'
+        details: ~
+        tasklist: '@recep_hiring'
+        done: false
+    drill_wall:
+        title: 'Drill wall to put curtains'
+        details: 'I need a ladder'
+        tasklist: '@hallisons_wife'
+        done: false
+    buy_tv:
+        title: 'Buy a new television'
+        details: 'At least 40 inches'
+        tasklist: '@hallisons_wife'
+        done: true

@@ -1,0 +1,7 @@
+.env.*.local
+.env.local
+.env.local.php
+bin/*
+!bin/console
+var/
+vendor/
